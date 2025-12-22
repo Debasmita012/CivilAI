@@ -12,7 +12,7 @@ from pathlib import Path
 def resize_image(src_path, dst_path, size=(640,640)):
     img = cv2.imread(str(src_path))
     if img is None:
-        raise ValueError(f"Failed to read image: {src_path}")
+        raise ValueError(f"Failed to read image: {src_path}") 
     img_resized = cv2.resize(img, size)
     cv2.imwrite(str(dst_path), img_resized)
 
