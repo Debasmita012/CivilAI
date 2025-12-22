@@ -1,0 +1,29 @@
+# Python
+_pycache_/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Models & weights
+*.pt
+*.onnx
+*.h5
+
+# Outputs
+results/
+reports/
+runs/
+temp_uploaded.jpg
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

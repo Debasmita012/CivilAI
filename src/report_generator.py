@@ -1,38 +1,139 @@
-# src/report_generator.py
-
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib.colors import green, orange, red, black
+from reportlab.lib.utils import ImageReader
+from datetime import datetime
 import os
 
-def generate_report(image_path, confidence, output_pdf="results/report.pdf"):
-    os.makedirs("results", exist_ok=True)
-
-    c = canvas.Canvas(output_pdf, pagesize=A4)
+def generate_pdf_report(
+    output_path,
+    crack_percentage,
+    risk_level,
+    severity_score,
+     annotated_image_path,
+    engineer_name,
+    project_id
+    
+):
+    c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
 
-    # Title
+    # --------------------------------------------------
+    # Date & Time
+    # --------------------------------------------------
+    now = datetime.now()
+    report_date = now.strftime("%d %B %Y")
+    report_time = now.strftime("%I:%M %p")
+
+    # --------------------------------------------------
+    # COST ESTIMATION LOGIC
+    # --------------------------------------------------
+    if risk_level == "Low":
+        base_cost = 500
+        risk_color = green
+        recommendation = "Routine monitoring and cosmetic repair recommended."
+    elif risk_level == "Medium":
+        base_cost = 1500
+        risk_color = orange
+        recommendation = "Seal cracks and conduct structural inspection."
+    else:
+        base_cost = 4000
+        risk_color = red
+        recommendation = "Immediate structural repair is required."
+
+    if severity_score < 30:
+        severity_multiplier = 1.0
+    elif severity_score < 60:
+        severity_multiplier = 1.5
+    else:
+        severity_multiplier = 2.2
+
+    estimated_cost = crack_percentage * base_cost * severity_multiplier
+
+    # --------------------------------------------------
+    # TITLE
+    # --------------------------------------------------
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height - 50, "CivilAI – Crack Detection Report")
+    c.drawString(50, height - 50, "CiviAI – Structural Crack Analysis Report")
+    c.line(50, height - 60, width - 50, height - 60)
 
-    # Subtitle
+    # --------------------------------------------------
+    # META INFO
+    # --------------------------------------------------
+    c.setFont("Helvetica", 11)
+    c.drawString(50, height - 90, f"Date: {report_date}")
+    c.drawString(300, height - 90, f"Time: {report_time}")
+
+    c.drawString(50, height - 115, f"Engineer: {engineer_name}")
+    c.drawString(300, height - 115, f"Project ID: {project_id}")
+
+    # --------------------------------------------------
+    # ANALYSIS
+    # --------------------------------------------------
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 90, "AI-Based Structural Health Monitoring")
+    c.drawString(50, height - 155, f"Crack Percentage: {crack_percentage:.2f}%")
+    c.drawString(50, height - 185, f"Severity Score: {severity_score:.1f}/100")
+    c.drawString(50, height - 215, f"Risk Level: {risk_level}")
 
-    # Image
-    c.drawImage(image_path, 50, height - 450, width=400, height=300)
+    # --------------------------------------------------
+    # RISK BAR
+    # --------------------------------------------------
+    c.setFillColor(risk_color)
+    c.rect(50, height - 250, 400, 18, fill=1)
+    c.setFillColor(black)
+    c.rect(50, height - 250, 400, 18, fill=0)
 
-    # Details
+    # --------------------------------------------------
+    # COST ESTIMATION
+    # --------------------------------------------------
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(50, height - 290, "Estimated Repair Cost")
+
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 480, f"Detected Class: Crack")
-    c.drawString(50, height - 500, f"Confidence Score: {confidence:.2f}")
-    c.drawString(50, height - 520, "Model: YOLOv8 (Custom Trained)")
-    c.drawString(50, height - 540, "Project: CivilAI – StructScan")
+    c.drawString(
+        50,
+        height - 320,
+        f"₹ {estimated_cost:,.0f} (Approximate)"
+    )
 
-    # Footer
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawString(50, 50, "Generated automatically using CivilAI")
+    # --------------------------------------------------
+    # RECOMMENDATION
+    # --------------------------------------------------
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(50, height - 360, "Engineering Recommendation")
+
+    c.setFont("Helvetica", 11)
+    c.drawString(50, height - 390, recommendation)
+
+    # --------------------------------------------------
+    # IMAGE PAGE
+    # --------------------------------------------------
+    if os.path.exists(annotated_image_path):
+        c.showPage()
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, height - 50, "Crack Detection Visualization")
+
+        img = ImageReader(annotated_image_path)
+        c.drawImage(
+            img,
+            50,
+            100,
+            width=width - 100,
+            height=height - 180,
+            preserveAspectRatio=True,
+            mask="auto"
+        )
+
+    # --------------------------------------------------
+    # FOOTER
+    # --------------------------------------------------
+    c.showPage()
+    c.setFont("Helvetica", 10)
+    c.drawString(
+        50,
+        50,
+        "Generated by CiviAI | AI-based Structural Health Monitoring"
+    )
 
     c.save()
-
-    return output_pdf
-
+    return output_path
