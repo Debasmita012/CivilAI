@@ -1,28 +1,25 @@
 # Python
 _pycache_/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual environments
 env/
-venv/
 .venv/
 
-# Models & weights
-*.pt
-*.onnx
-*.h5
-
-# Outputs
+# Data & outputs
 results/
 reports/
 runs/
+temp/
 temp_uploaded.jpg
+*.jpg
+*.png
+*.pdf
+
+# Models
+*.pt
+models/
 
 # IDE
 .vscode/
-.idea/
 
 # OS
 .DS_Store

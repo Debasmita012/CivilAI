@@ -1,139 +1,157 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib.colors import green, orange, red, black
+from reportlab.lib.colors import green, orange, red, black, HexColor
 from reportlab.lib.utils import ImageReader
+from math import cos, sin, radians
 from datetime import datetime
 import os
 
+
 def generate_pdf_report(
-    output_path,
-    crack_percentage,
-    risk_level,
-    severity_score,
-     annotated_image_path,
-    engineer_name,
-    project_id
-    
+    *,
+    output_path: str,
+    crack_percentage: float,
+    risk_level: str,
+    severity_score: float,
+    annotated_image_path: str,
+    heatmap_path: str,
+    engineer_name: str,
+    project_id: str
 ):
     c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
 
-    # --------------------------------------------------
-    # Date & Time
-    # --------------------------------------------------
+    # ==================================================
+    # DATE
+    # ==================================================
     now = datetime.now()
-    report_date = now.strftime("%d %B %Y")
-    report_time = now.strftime("%I:%M %p")
+    report_date = now.strftime("%d %B %Y | %I:%M %p")
 
-    # --------------------------------------------------
-    # COST ESTIMATION LOGIC
-    # --------------------------------------------------
+    # ==================================================
+    # RISK SETTINGS
+    # ==================================================
     if risk_level == "Low":
-        base_cost = 500
         risk_color = green
-        recommendation = "Routine monitoring and cosmetic repair recommended."
+        explanation = (
+            "Low Risk: Minor surface-level cracks detected.\n"
+            "No immediate structural concern. Routine monitoring advised."
+        )
     elif risk_level == "Medium":
-        base_cost = 1500
         risk_color = orange
-        recommendation = "Seal cracks and conduct structural inspection."
+        explanation = (
+            "Medium Risk: Cracks may affect durability over time.\n"
+            "Preventive repair and professional inspection recommended."
+        )
     else:
-        base_cost = 4000
         risk_color = red
-        recommendation = "Immediate structural repair is required."
+        explanation = (
+            "High Risk: Severe cracks detected.\n"
+            "Structural integrity may be compromised. Immediate action required."
+        )
 
-    if severity_score < 30:
-        severity_multiplier = 1.0
-    elif severity_score < 60:
-        severity_multiplier = 1.5
-    else:
-        severity_multiplier = 2.2
-
-    estimated_cost = crack_percentage * base_cost * severity_multiplier
-
-    # --------------------------------------------------
-    # TITLE
-    # --------------------------------------------------
+    # ==================================================
+    # PAGE 1 — SUMMARY
+    # ==================================================
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height - 50, "CiviAI – Structural Crack Analysis Report")
+    c.drawString(50, height - 50, "StructScan AI – Structural Inspection Report")
     c.line(50, height - 60, width - 50, height - 60)
 
-    # --------------------------------------------------
-    # META INFO
-    # --------------------------------------------------
     c.setFont("Helvetica", 11)
-    c.drawString(50, height - 90, f"Date: {report_date}")
-    c.drawString(300, height - 90, f"Time: {report_time}")
-
-    c.drawString(50, height - 115, f"Engineer: {engineer_name}")
-    c.drawString(300, height - 115, f"Project ID: {project_id}")
-
-    # --------------------------------------------------
-    # ANALYSIS
-    # --------------------------------------------------
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height - 155, f"Crack Percentage: {crack_percentage:.2f}%")
-    c.drawString(50, height - 185, f"Severity Score: {severity_score:.1f}/100")
-    c.drawString(50, height - 215, f"Risk Level: {risk_level}")
-
-    # --------------------------------------------------
-    # RISK BAR
-    # --------------------------------------------------
-    c.setFillColor(risk_color)
-    c.rect(50, height - 250, 400, 18, fill=1)
-    c.setFillColor(black)
-    c.rect(50, height - 250, 400, 18, fill=0)
-
-    # --------------------------------------------------
-    # COST ESTIMATION
-    # --------------------------------------------------
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(50, height - 290, "Estimated Repair Cost")
+    c.drawString(50, height - 95, f"Date: {report_date}")
+    c.drawString(50, height - 120, f"Engineer: {engineer_name}")
+    c.drawString(350, height - 120, f"Project ID: {project_id}")
 
     c.setFont("Helvetica", 12)
-    c.drawString(
-        50,
-        height - 320,
-        f"₹ {estimated_cost:,.0f} (Approximate)"
-    )
+    c.drawString(50, height - 170, f"Crack Coverage: {crack_percentage:.2f}%")
+    c.drawString(50, height - 200, f"Severity Score: {severity_score:.1f} / 100")
+    c.drawString(50, height - 230, f"Risk Level: {risk_level}")
 
-    # --------------------------------------------------
-    # RECOMMENDATION
-    # --------------------------------------------------
+    # ==================================================
+    # SEVERITY GAUGE (SPEEDOMETER)
+    # ==================================================
+    cx, cy = 300, height - 360
+    radius = 90
+
+    # Arc background
+    c.setLineWidth(14)
+    c.setStrokeColor(green)
+    c.arc(cx - radius, cy - radius, cx + radius, cy + radius, 180, 120)
+
+    c.setStrokeColor(orange)
+    c.arc(cx - radius, cy - radius, cx + radius, cy + radius, 300, 120)
+
+    c.setStrokeColor(red)
+    c.arc(cx - radius, cy - radius, cx + radius, cy + radius, 60, 120)
+
+    # Needle
+    angle = 180 - (severity_score * 180 / 100)
+    needle_x = cx + radius * 0.85 * cos(radians(angle))
+    needle_y = cy + radius * 0.85 * sin(radians(angle))
+
+    c.setStrokeColor(black)
+    c.setLineWidth(2)
+    c.line(cx, cy, needle_x, needle_y)
+    c.circle(cx, cy, 5, fill=1)
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(cx, cy - 110, "Severity Gauge")
+
+    # ==================================================
+    # RISK EXPLANATION
+    # ==================================================
     c.setFont("Helvetica-Bold", 13)
-    c.drawString(50, height - 360, "Engineering Recommendation")
+    c.drawString(50, height - 480, "Risk Interpretation")
 
     c.setFont("Helvetica", 11)
-    c.drawString(50, height - 390, recommendation)
+    text = c.beginText(50, height - 510)
+    for line in explanation.split("\n"):
+        text.textLine(line)
+    c.drawText(text)
 
-    # --------------------------------------------------
-    # IMAGE PAGE
-    # --------------------------------------------------
+    c.setFont("Helvetica", 9)
+    c.drawString(50, 40, "Generated by StructScan AI")
+
+    # ==================================================
+    # PAGE 2 — ANNOTATED IMAGE
+    # ==================================================
     if os.path.exists(annotated_image_path):
         c.showPage()
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, height - 50, "Crack Detection Visualization")
+        c.drawString(50, height - 50, "Crack Detection – Bounding Boxes")
 
         img = ImageReader(annotated_image_path)
         c.drawImage(
             img,
             50,
-            100,
+            80,
             width=width - 100,
-            height=height - 180,
-            preserveAspectRatio=True,
-            mask="auto"
+            height=height - 160,
+            preserveAspectRatio=True
         )
 
-    # --------------------------------------------------
-    # FOOTER
-    # --------------------------------------------------
-    c.showPage()
-    c.setFont("Helvetica", 10)
-    c.drawString(
-        50,
-        50,
-        "Generated by CiviAI | AI-based Structural Health Monitoring"
-    )
+        c.setFont("Helvetica", 9)
+        c.drawString(50, 40, "StructScan AI – Detection Output")
+
+    # ==================================================
+    # PAGE 3 — HEATMAP
+    # ==================================================
+    if heatmap_path and os.path.exists(heatmap_path):
+        c.showPage()
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, height - 50, "Crack Density Heatmap")
+
+        img = ImageReader(heatmap_path)
+        c.drawImage(
+            img,
+            50,
+            80,
+            width=width - 100,
+            height=height - 160,
+            preserveAspectRatio=True
+        )
+
+        c.setFont("Helvetica", 9)
+        c.drawString(50, 40, "Red areas indicate higher crack concentration")
 
     c.save()
     return output_path
