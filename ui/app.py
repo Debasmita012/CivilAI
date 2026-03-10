@@ -398,130 +398,113 @@ def render_gauge(severity: float, risk: str) -> str:
     progress_a2 = max(180 - (severity / 100) * 180, 0.1)
     R_mid = (R_outer + R_inner) // 2
 
-    # Zone arc path builder (closed filled segments)
-    def zone_path(a_start, a_end):
-        p1o = pt(a_start, R_outer); p2o = pt(a_end, R_outer)
-        p1i = pt(a_start, R_inner); p2i = pt(a_end, R_inner)
-        laf = 1 if abs(a_end - a_start) > 180 else 0
-        return (
-            f"M {p1o[0]:.3f} {p1o[1]:.3f} "
-            f"A {R_outer} {R_outer} 0 {laf} 0 {p2o[0]:.3f} {p2o[1]:.3f} "
-            f"L {p2i[0]:.3f} {p2i[1]:.3f} "
-            f"A {R_inner} {R_inner} 0 {laf} 1 {p1i[0]:.3f} {p1i[1]:.3f} Z"
-        )
-
-    zp_low = zone_path(180, 120)
-    zp_mid = zone_path(120, 60)
-    zp_hi  = zone_path(60,  0)
-
-    # Pre-compute all text/label positions as plain numbers
-    lbl_low_x, lbl_low_y  = pt(150, R_inner + 10)
-    lbl_med_y              = cy - R_inner - 14
-    lbl_hi_x,  lbl_hi_y   = pt(30,  R_inner + 10)
-
-    bg_arc   = arc(R_mid, 180, 0,          R_outer - R_inner, "rgba(255,255,255,.04)", linecap="butt")
-    prog_lo  = arc(R_mid, 180, progress_a2, 6,   needle_color, linecap="round", opacity=0.55)
-    prog_hi  = arc(R_mid, 180, progress_a2, 2.5, needle_color, linecap="round", opacity=0.9)
-
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  html,body{{margin:0;padding:0;background:#05090f;display:flex;align-items:center;justify-content:center;height:100%;}}
-</style>
-</head>
-<body>
+    return f"""
+<div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 4px">
 <svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">
 <defs>
-  <filter id="glow_n" x="-50%" y="-50%" width="200%" height="200%">
+  <filter id="glow_n">
     <feGaussianBlur stdDeviation="5" result="b"/>
     <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
-  <filter id="glow_s" x="-50%" y="-50%" width="200%" height="200%">
+  <filter id="glow_s">
     <feGaussianBlur stdDeviation="3" result="b"/>
     <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
-  <filter id="dropshadow" x="-50%" y="-50%" width="200%" height="200%">
-    <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.6"/>
+  <filter id="shadow">
+    <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="rgba(0,0,0,.6)"/>
   </filter>
-  <radialGradient id="hub_rg" cx="50%" cy="50%" r="50%">
-    <stop offset="0%"   stop-color="#d8eaff" stop-opacity="0.9"/>
-    <stop offset="60%"  stop-color="{needle_color}" stop-opacity="1"/>
-    <stop offset="100%" stop-color="{needle_color}" stop-opacity="0.5"/>
+  <radialGradient id="hub" cx="50%" cy="50%">
+    <stop offset="0%" stop-color="#d8eaff" stop-opacity=".9"/>
+    <stop offset="60%" stop-color="{needle_color}"/>
+    <stop offset="100%" stop-color="{needle_color}" stop-opacity=".6"/>
   </radialGradient>
   <linearGradient id="low_g" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%"   stop-color="#22d984"/>
+    <stop offset="0%" stop-color="#22d984"/>
     <stop offset="100%" stop-color="#18b870"/>
   </linearGradient>
   <linearGradient id="mid_g" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%"   stop-color="#f5c842"/>
+    <stop offset="0%" stop-color="#f5c842"/>
     <stop offset="100%" stop-color="#f5a623"/>
   </linearGradient>
   <linearGradient id="hi_g" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%"   stop-color="#ff7340"/>
+    <stop offset="0%" stop-color="#ff7340"/>
     <stop offset="100%" stop-color="#ff4560"/>
   </linearGradient>
 </defs>
 
-<!-- background -->
-{bg_arc}
+<!-- ── BACKGROUND TRACK ── -->
+{arc(R_mid, 180, 0, R_outer-R_inner, "rgba(255,255,255,.04)", linecap="butt")}
 
-<!-- zone fills -->
-<path d="{zp_low}" fill="url(#low_g)" opacity="0.85"/>
-<path d="{zp_mid}" fill="url(#mid_g)" opacity="0.85"/>
-<path d="{zp_hi}"  fill="url(#hi_g)"  opacity="0.85"/>
+<!-- ── ZONE ARCS ── -->
+<path d="M {pt(180,R_outer)[0]:.3f} {pt(180,R_outer)[1]:.3f}
+         A {R_outer} {R_outer} 0 0 0 {pt(120,R_outer)[0]:.3f} {pt(120,R_outer)[1]:.3f}
+         L {pt(120,R_inner)[0]:.3f} {pt(120,R_inner)[1]:.3f}
+         A {R_inner} {R_inner} 0 0 1 {pt(180,R_inner)[0]:.3f} {pt(180,R_inner)[1]:.3f} Z"
+      fill="url(#low_g)" opacity=".85"/>
+<path d="M {pt(120,R_outer)[0]:.3f} {pt(120,R_outer)[1]:.3f}
+         A {R_outer} {R_outer} 0 0 0 {pt(60,R_outer)[0]:.3f} {pt(60,R_outer)[1]:.3f}
+         L {pt(60,R_inner)[0]:.3f} {pt(60,R_inner)[1]:.3f}
+         A {R_inner} {R_inner} 0 0 1 {pt(120,R_inner)[0]:.3f} {pt(120,R_inner)[1]:.3f} Z"
+      fill="url(#mid_g)" opacity=".85"/>
+<path d="M {pt(60,R_outer)[0]:.3f} {pt(60,R_outer)[1]:.3f}
+         A {R_outer} {R_outer} 0 0 0 {pt(0,R_outer)[0]:.3f} {pt(0,R_outer)[1]:.3f}
+         L {pt(0,R_inner)[0]:.3f} {pt(0,R_inner)[1]:.3f}
+         A {R_inner} {R_inner} 0 0 1 {pt(60,R_inner)[0]:.3f} {pt(60,R_inner)[1]:.3f} Z"
+      fill="url(#hi_g)" opacity=".85"/>
 
-<!-- dividers -->
+<!-- ── ZONE DIVIDERS ── -->
 {dividers}
 
-<!-- ticks -->
+<!-- ── TICK MARKS ── -->
 {ticks_svg}
 
-<!-- zone labels -->
-<text x="{lbl_low_x:.1f}" y="{lbl_low_y+4:.1f}" text-anchor="middle"
-      fill="#22d984" font-size="10" font-family="Arial,sans-serif" font-weight="700">LOW</text>
-<text x="{cx}" y="{lbl_med_y:.1f}" text-anchor="middle"
-      fill="#f5a623" font-size="10" font-family="Arial,sans-serif" font-weight="700">MED</text>
-<text x="{lbl_hi_x:.1f}" y="{lbl_hi_y+4:.1f}" text-anchor="middle"
-      fill="#ff4560" font-size="10" font-family="Arial,sans-serif" font-weight="700">HIGH</text>
+<!-- ── ZONE LABELS ── -->
+<text x="{pt(150,R_inner+10)[0]:.1f}" y="{pt(150,R_inner+10)[1]+4:.1f}"
+      text-anchor="middle" fill="#22d984" font-size="10.5"
+      font-family="Barlow Condensed,sans-serif" font-weight="700" letter-spacing=".1em">LOW</text>
+<text x="{cx}" y="{cy - R_inner - 14}"
+      text-anchor="middle" fill="#f5a623" font-size="10.5"
+      font-family="Barlow Condensed,sans-serif" font-weight="700" letter-spacing=".1em">MED</text>
+<text x="{pt(30,R_inner+10)[0]:.1f}" y="{pt(30,R_inner+10)[1]+4:.1f}"
+      text-anchor="middle" fill="#ff4560" font-size="10.5"
+      font-family="Barlow Condensed,sans-serif" font-weight="700" letter-spacing=".1em">HIGH</text>
 
-<!-- progress glow -->
-{prog_lo}
-{prog_hi}
+<!-- ── PROGRESS GLOW ARC ── -->
+{arc(R_mid, 180, progress_a2, 6, needle_color, linecap="round", opacity=0.55)}
+{arc(R_mid, 180, progress_a2, 2.5, needle_color, linecap="round", opacity=0.9)}
 
-<!-- needle shadow -->
+<!-- ── NEEDLE SHADOW ── -->
 <line x1="{ntx:.2f}" y1="{nty:.2f}" x2="{nex:.2f}" y2="{ney:.2f}"
-      stroke="rgba(0,0,0,0.5)" stroke-width="6" stroke-linecap="round"/>
+      stroke="rgba(0,0,0,.45)" stroke-width="6" stroke-linecap="round"/>
 
-<!-- needle -->
+<!-- ── NEEDLE ── -->
 <line x1="{ntx:.2f}" y1="{nty:.2f}" x2="{nex:.2f}" y2="{ney:.2f}"
       stroke="{needle_color}" stroke-width="3.5" stroke-linecap="round"
       filter="url(#glow_n)"/>
 
-<!-- hub -->
-<circle cx="{cx}" cy="{cy}" r="13" fill="#0b1220" filter="url(#dropshadow)"/>
-<circle cx="{cx}" cy="{cy}" r="10" fill="url(#hub_rg)"/>
-<circle cx="{cx}" cy="{cy}" r="4"  fill="white" opacity="0.95"/>
+<!-- ── HUB ── -->
+<circle cx="{cx}" cy="{cy}" r="13" fill="#0b1220" filter="url(#shadow)"/>
+<circle cx="{cx}" cy="{cy}" r="10" fill="url(#hub)"/>
+<circle cx="{cx}" cy="{cy}" r="4"  fill="white" opacity=".95"/>
 
-<!-- score -->
-<text x="{cx}" y="{cy-24}" text-anchor="middle"
-      fill="{needle_color}" font-size="30" font-family="Arial,sans-serif"
-      font-weight="700" filter="url(#glow_s)">{severity:.1f}</text>
-<text x="{cx}" y="{cy-8}" text-anchor="middle"
-      fill="rgba(168,216,255,0.4)" font-size="10" font-family="Arial,sans-serif"
-      font-weight="600">/ 100</text>
+<!-- ── SCORE DISPLAY ── -->
+<text x="{cx}" y="{cy-26}" text-anchor="middle"
+      fill="{needle_color}" font-size="32" font-family="Rajdhani,sans-serif"
+      font-weight="700" letter-spacing=".02em" filter="url(#glow_s)">{severity:.1f}</text>
+<text x="{cx}" y="{cy-9}" text-anchor="middle"
+      fill="rgba(168,216,255,.35)" font-size="10"
+      font-family="Barlow Condensed,sans-serif" font-weight="600" letter-spacing=".12em">/ 100</text>
 
-<!-- risk badge -->
-<rect x="{cx-50}" y="{cy+8}" width="100" height="22" rx="5"
-      fill="{needle_color}" fill-opacity="0.12"
-      stroke="{needle_color}" stroke-width="1" stroke-opacity="0.4"/>
-<text x="{cx}" y="{cy+23}" text-anchor="middle"
-      fill="{needle_color}" font-size="10" font-family="Arial,sans-serif"
-      font-weight="700">{risk_label}</text>
+<!-- ── RISK BADGE ── -->
+<rect x="{cx-52}" y="{cy+8}" width="104" height="24" rx="5"
+      fill="{needle_color}" fill-opacity=".12"
+      stroke="{needle_color}" stroke-width="1" stroke-opacity=".35"/>
+<text x="{cx}" y="{cy+24}" text-anchor="middle"
+      fill="{needle_color}" font-size="11" font-family="Barlow Condensed,sans-serif"
+      font-weight="700" letter-spacing=".14em">{risk_label}</text>
 </svg>
-</body>
-</html>"""
+</div>
+"""
 
 
 # ─────────────────────────────────────────────────────────────
@@ -828,7 +811,7 @@ if st.session_state.result:
     with col_g:
         st.markdown('<div class="sect" style="min-height:320px">', unsafe_allow_html=True)
         st.markdown(sh("📈", "Severity Gauge", "0 = no damage · 100 = catastrophic failure"), unsafe_allow_html=True)
-        components.html(render_gauge(r["severity_score"], rl), height=260, scrolling=False)
+        components.html(render_gauge(r["severity_score"], rl), height=245)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col_m:
@@ -906,13 +889,15 @@ if st.session_state.result:
                 rpath = os.path.join(rdir, "StructScan_Report.pdf")
                 generate_pdf_report(
                     output_path=rpath,
-                    engineer_name=engineer_name,
-                    project_id=project_id,
+                    engineer_name=engineer_name, project_id=project_id,
                     crack_percentage=float(r["crack_percentage"]),
-                    severity_score=float(r["severity_score"]),
-                    risk_level=str(rl),
+                    severity_score=float(r["severity_score"]), risk_level=str(rl),
                     annotated_image_path=r["annotated_image_path"],
                     heatmap_path=r.get("heatmap_path"),
+                    location=location, construction_type=construction_type,
+                    inspection_date=str(inspection_date), site_notes=notes,
+                    recommendations=rec["actions"],
+                    timeline=rec["timeline"], specialist=rec["specialist"],
                 )
             with open(rpath, "rb") as f:
                 st.download_button("Download PDF Report ↓", f,
