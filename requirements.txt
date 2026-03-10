@@ -1,0 +1,11 @@
+numpy
+opencv-python
+torch
+torchvision
+ultralytics
+streamlit
+reportlab
+<<<<<<< HEAD
+cv2-python-headless
+=======
+>>>>>>> 3306c4e0c6815d1defd00970c98ae92afca68dfe

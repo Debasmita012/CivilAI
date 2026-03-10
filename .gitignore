@@ -1,0 +1,26 @@
+# Python
+*.pyc
+env/
+venv/
+.venv/
+__pycache__/
+# Data & outputs
+results/
+reports/
+runs/
+temp/
+temp_uploaded.jpg
+*.jpg
+*.png
+*.pdf
+
+# Models
+*.pt
+models/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

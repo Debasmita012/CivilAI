@@ -1,0 +1,8 @@
+path: C:/CivilAI
+
+train: data/processed/train/images
+val: data/processed/val/images
+test: data/processed/test/images
+
+names:
+  0: crack
