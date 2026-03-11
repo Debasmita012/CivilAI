@@ -1,9 +1,17 @@
 # Python
+<<<<<<< HEAD
 *.pyc
 env/
 venv/
 .venv/
 __pycache__/
+=======
+_pycache_/
+*.pyc
+env/
+.venv/
+
+>>>>>>> 3306c4e0c6815d1defd00970c98ae92afca68dfe
 # Data & outputs
 results/
 reports/
